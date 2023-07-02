@@ -519,6 +519,7 @@ enum {
 %token	T_PERIOD "."
 %token	T_COMMA ","
 %token	T_COLON ":"
+%token	<symName> T_SEMICOLON ";"
 %token	T_LBRACK "[" T_RBRACK "]"
 %token	T_LPAREN "(" T_RPAREN ")"
 %token	T_NEWLINE "newline"
@@ -839,6 +840,9 @@ label		: %empty
 		| T_LABEL T_COLON T_COLON {
 			sym_AddLabel($1);
 			sym_Export($1);
+		}
+		| T_SEMICOLON {
+			sym_AddComment($1);
 		}
 ;
 

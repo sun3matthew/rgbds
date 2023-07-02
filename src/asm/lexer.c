@@ -353,6 +353,8 @@ struct LexerState {
 	size_t macroArgScanDistance; // Max distance already scanned for macro args
 	bool expandStrings;
 	struct Expansion *expansions; // Points to the innermost current expansion
+
+	bool leadWithSpace; // If there has only been whitespace since the last newline
 };
 
 struct LexerState *lexerState = NULL;
@@ -362,6 +364,7 @@ static void initState(struct LexerState *state)
 {
 	state->mode = LEXER_NORMAL;
 	state->atLineStart = true; // yylex() will init colNo due to this
+	state->leadWithSpace = true;
 	state->lastToken = T_EOF;
 
 	state->ifStack = NULL;
@@ -1063,6 +1066,28 @@ static void discardComment(void)
 	lexerState->disableMacroArgs = false;
 	lexerState->disableInterpolation = false;
 }
+
+// Read Comment
+static void readComment(char firstChar)
+{
+	lexerState->disableMacroArgs = true;
+	lexerState->disableInterpolation = true;
+	yylval.symName[0] = firstChar;
+	size_t i = 1;
+	for (int c = peek(); c != EOF && c != '\r' && c != '\n'; i++, c = peek()) {
+		shiftChar();
+		if (i < sizeof(yylval.symName) - 1)
+			yylval.symName[i] = c;
+	}
+	if (i > sizeof(yylval.symName) - 1) {
+		warning(WARNING_LONG_STR, "Comment too long, got truncated\n");
+		i = sizeof(yylval.symName) - 1;
+	}
+	yylval.symName[i] = '\0'; // Terminate the string
+	lexerState->disableMacroArgs = false;
+	lexerState->disableInterpolation = false;
+}
+
 
 // Function to read a line continuation
 
@@ -1779,8 +1804,13 @@ static int yylex_NORMAL(void)
 		// Ignore whitespace and comments
 
 		case ';':
+		 	if (lexerState->leadWithSpace){
+				readComment(c);
+				return T_SEMICOLON;
+			}
 			discardComment();
 			// fallthrough
+
 		case ' ':
 		case '\t':
 			break;
@@ -2420,6 +2450,11 @@ int yylex(void)
 		token = T_EOB;
 	lexerState->lastToken = token;
 	lexerState->atLineStart = token == T_NEWLINE || token == T_EOB;
+
+	lexerState->leadWithSpace = false;
+	if (token == T_NEWLINE)
+		lexerState->leadWithSpace = true;
+	
 
 	return token;
 }

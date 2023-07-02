@@ -276,16 +276,30 @@ static struct SortedSection const **nextSection(struct SortedSection const **s1,
 }
 
 // Checks whether this character is legal as the first character of a symbol's name in a sym file
-static bool canStartSymName(char c)
+static bool canStartMapName(char c)
 {
 	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+}
+static bool hasDotMapName(char const *name)
+{
+	for (char const *ptr = name; *ptr; ptr++) {
+		if (*ptr == '.')
+			return true;
+	}
+	return false;
+}
+
+static bool canStartSymName(char c)
+{
+	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_' || c == ';';
 }
 
 // Checks whether this character is legal in a symbol's name in a sym file
 static bool isLegalForSymName(char c)
 {
-	return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
-	       c == '_' || c == '@' || c == '#' || c == '$' || c == '.';
+	//return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+	//       c == '_' || c == '@' || c == '#' || c == '$' || c == '.';
+	return true;
 }
 
 // Prints a symbol's name to `symFile`, assuming that the first character is legal.
@@ -462,8 +476,9 @@ static uint16_t writeMapBank(struct SortedSections const *sectList,
 			while (sect) {
 				for (size_t i = 0; i < sect->nbSymbols; i++)
 					// Space matches "\tSECTION: $xxxx ..."
-					fprintf(mapFile, "\t         $%04" PRIx32 " = %s\n",
-						sect->symbols[i]->offset + org,
+					if(canStartMapName(sect->symbols[i]->name[0]) && !hasDotMapName(sect->symbols[i]->name))
+						fprintf(mapFile, "\t         $%04" PRIx32 " = %s\n",
+							sect->symbols[i]->offset + org,
 						sect->symbols[i]->name);
 
 				if (sect->nextu) {

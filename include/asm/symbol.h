@@ -26,7 +26,8 @@ enum SymbolType {
 	SYM_VAR,
 	SYM_MACRO,
 	SYM_EQUS,
-	SYM_REF // Forward reference to a label
+	SYM_REF, // Forward reference to a label
+	SYM_COMMENT
 };
 
 struct Symbol {
@@ -112,6 +113,7 @@ int32_t sym_GetValue(struct Symbol const *sym);
 void sym_SetExportAll(bool set);
 struct Symbol *sym_AddLocalLabel(char const *symName);
 struct Symbol *sym_AddLabel(char const *symName);
+void sym_AddComment(char const *symName);
 struct Symbol *sym_AddAnonLabel(void);
 void sym_WriteAnonLabelName(char buf[MIN_NB_ELMS(MAXSYMLEN + 1)], uint32_t ofs, bool neg);
 void sym_Export(char const *symName);

@@ -522,6 +522,7 @@ static struct Symbol *addLabel(char const *symName)
 	return sym;
 }
 
+
 // Add a local (`.name` or `Parent.name`) relocatable symbol
 struct Symbol *sym_AddLocalLabel(char const *symName)
 {
@@ -577,6 +578,37 @@ struct Symbol *sym_AddLabel(char const *symName)
 	if (sym)
 		sym_SetCurrentSymbolScope(sym->name);
 	return sym;
+}
+
+void sym_AddComment(char const *symName)
+{
+	if(sect_GetSymbolSection()){
+		char lineNum[5];
+		uint32_t num = lexer_GetLineNo();
+		snprintf(lineNum, sizeof lineNum, "%04" PRIu32, num);
+
+		char *comment = malloc(strlen(symName) + strlen(lineNum) + 4);
+		comment[0] = ';';
+		comment[1] = '\0';
+
+		// symName = ; this is a test
+		char *symNameWithoutSemiColon = malloc(strlen(symName) + 1);
+		strcpy(symNameWithoutSemiColon, symName + 1);
+
+
+		strcat(comment, lineNum);
+		strcat(comment, "| ");
+		strcat(comment, symNameWithoutSemiColon);
+
+		struct Symbol *sym = createsymbol(comment);
+
+		sym->type = SYM_COMMENT;
+		sym->value = sect_GetSymbolOffset();
+		sym->section = sect_GetSymbolSection();
+
+		free(comment);
+		free(symNameWithoutSemiColon);
+	}
 }
 
 static uint32_t anonLabelID;
